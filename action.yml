@@ -2,17 +2,8 @@ name: AWS SSM Send-Command Action
 description: Run command on the EC2 instance through SSM
 
 inputs:
-  aws-access-key-id:
-    description: AWS_ACCESS_KEY_ID
-    required: true
-  aws-secret-access-key:
-    description: AWS_SECRET_ACCESS_KEY
-    required: true
   aws-region:
     description: AWS_REGION
-    required: true
-  targets:
-    description: Target Instances
     required: true
   document-name:
     description: Document Name
@@ -21,21 +12,24 @@ inputs:
   parameters:
     description: Parameters depend on document
     required: true
+  targets:
+    description: Target Instances
+    required: true
   timeout:
     description: Timeout to command
     default: '60'
     required: false
 
 outputs:
-  status:
-    description: Status of command
   command-id:
-    description: CommandId to check the details of the command executed  
+    description: CommandId to check the details of the command executed
   output:
     description: Command output
+  status:
+    description: Status of command
 
 runs:
-  using: node12
+  using: node20
   main: dist/index.js
 
 branding:

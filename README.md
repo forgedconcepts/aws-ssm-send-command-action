@@ -3,28 +3,17 @@
 Run AWS's SSM Send-Command API using this action. Refer to [AWS SDK for JavaScript v3](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-ssm/interfaces/sendcommandcommandinput.html).
 
 ```yml
-  - name: Run aws ssm send-command
-    uses: nohmad/aws-ssm-send-command-action@master
-    with:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      aws-region: ap-northeast-2
-      targets: |
-        [{"Key":"InstanceIds","Values":["i-1234567890"]}]
-      document-name: AWS-RunShellScript
-      parameters: |
-        {"commands":["uname -a"]}
+- name: Run aws ssm send-command
+  uses: nohmad/aws-ssm-send-command-action@master
+  with:
+    targets: |
+      [{"Key":"InstanceIds","Values":["i-1234567890"]}]
+    document-name: AWS-RunShellScript
+    parameters: |
+      {"commands":["uname -a"]}
 ```
 
 ## Inputs
-
-### aws-access-key-id
-
-**Required**. `secrets.AWS_ACCESS_KEY_ID`
-
-### aws-secret-access-key
-
-**Required**. `secrets.AWS_SECRET_ACCESS_KEY`
 
 ### aws-region
 
@@ -37,13 +26,16 @@ Currently, only the **AWS-RunShellScript** was tested.
 ### targets
 
 **Required**. Specify target instances by JSON format.
+
 ```json
 [
   {
-    "Key": "tag:Name", "Values": ["ec2-instance-name"]
+    "Key": "tag:Name",
+    "Values": ["ec2-instance-name"]
   },
   {
-    "Key": "InstanceIds", "Values": ["i-1234567890"]
+    "Key": "InstanceIds",
+    "Values": ["i-1234567890"]
   }
 ]
 ```
@@ -51,6 +43,7 @@ Currently, only the **AWS-RunShellScript** was tested.
 ### parameters
 
 **Required**. Parameters to the document. Must be formatted as JSON:
+
 ```json
 {"commands": ["uname -a"]}
 ```
@@ -59,7 +52,7 @@ Currently, only the **AWS-RunShellScript** was tested.
 
 ### status
 
-Taken from `.CommandInvocations[0].Status`.  `Success` or `Failure`
+Taken from `.CommandInvocations[0].Status`. `Success` or `Failure`
 
 ### command-id
 
