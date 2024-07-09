@@ -10,23 +10,28 @@ async function main() {
   const client = new SSMClient({region});
   const TimeoutSeconds = parseInt(core.getInput('timeout'));
   const parameters = core.getInput('parameters', {required: true});
+
   const command = new SendCommandCommand({
     TimeoutSeconds,
     Targets: JSON.parse(core.getInput('targets', {required: true})),
     DocumentName: core.getInput('document-name'),
     Parameters: JSON.parse(parameters),
   });
+
   if (core.isDebug()) {
     core.debug(parameters);
     core.debug(JSON.stringify(command));
   }
+
   const result = await client.send(command);
   const CommandId = result.Command?.CommandId;
-  core.setOutput('command-id', CommandId);
+  core.info('command-id: ${CommandId}');
 
   const int32 = new Int32Array(new SharedArrayBuffer(4));
   const outputs = [];
   let status = 'Pending';
+  let finalOutput = '';
+
   for (let i = 0; i < TimeoutSeconds; i++) {
     Atomics.wait(int32, 0, 0, 1000);
     const result = await client.send(
@@ -34,6 +39,9 @@ async function main() {
     );
     const invocation = result.CommandInvocations?.[0] || {};
     status = invocation.Status as string;
+
+    core.info(`status: ${status}`);
+
     if (['Success', 'Failure'].includes(status)) {
       for (const cp of invocation.CommandPlugins || []) {
         outputs.push(cp.Output as string);
@@ -47,8 +55,11 @@ async function main() {
   }
 
   core.setOutput('status', status);
-  core.setOutput('output', outputs.join('\n'));
+
+  core.info(`output: ${outputs.join('\n')}`);
+  core.info(`results: ${finalOutput}`);
 }
+
 main().catch((e) => core.setFailed(e.message));
 
 export default main;
