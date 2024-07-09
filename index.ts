@@ -41,9 +41,11 @@ async function main() {
       break;
     }
   }
+
   if (status != 'Success') {
     throw new Error(`Failed to send command: ${status}`);
   }
+
   core.setOutput('status', status);
   core.setOutput('output', outputs.join('\n'));
 }

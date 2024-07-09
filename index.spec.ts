@@ -50,7 +50,8 @@ describe('aws-ssm-send-command-action', () => {
     expect(calls[0][0].constructor).toBe(SendCommandCommand);
     expect(calls[1][0].constructor).toBe(ListCommandInvocationsCommand);
 
-    const command = (MockedSendCommand as jest.Mock).mock.calls[0][0];
+    const command = (MockedSendCommand as unknown as jest.Mock).mock
+      .calls[0][0];
     expect(command.Targets).toEqual(
       JSON.parse(DEFAULT_INPUTS.get('targets') as string),
     );
