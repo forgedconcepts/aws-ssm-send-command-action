@@ -30,6 +30,7 @@ async function main() {
   const int32 = new Int32Array(new SharedArrayBuffer(4));
   const outputs = [];
   let status = 'Pending';
+  let standardUrl = '';
 
   while (true) {
     Atomics.wait(int32, 0, 0, 5000);
@@ -44,8 +45,15 @@ async function main() {
     if (['Cancelled', 'Failed', 'Success', 'TimedOut'].includes(status)) {
       for (const cp of invocation.CommandPlugins || []) {
         outputs.push(cp.Output as string);
+
+        core.info(cp.Output as string);
       }
 
+      break;
+    }
+
+    if (status === 'Failed') {
+      core.setFailed(`failed_url: ${invocation.StandardErrorUrl}`);
       break;
     }
   }
@@ -54,7 +62,7 @@ async function main() {
   core.setOutput('output', outputs.join('\n'));
 
   if (status != 'Success') {
-    throw new Error(`Failed to send command: ${status}`);
+    throw new Error(`Command failed: ${status}`);
   }
 }
 
