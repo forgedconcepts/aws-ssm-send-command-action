@@ -31,30 +31,31 @@ async function main() {
   const outputs = [];
   let status = 'Pending';
 
-  for (let i = 0; i < TimeoutSeconds; i++) {
-    Atomics.wait(int32, 0, 0, 1000);
+  while (true) {
+    Atomics.wait(int32, 0, 0, 5000);
+
     const result = await client.send(
       new ListCommandInvocationsCommand({CommandId, Details: true}),
     );
+
     const invocation = result.CommandInvocations?.[0] || {};
     status = invocation.Status as string;
 
-    if (['Success', 'Failure'].includes(status)) {
+    if (['Cancelled', 'Failed', 'Success', 'TimedOut'].includes(status)) {
       for (const cp of invocation.CommandPlugins || []) {
-        core.info(cp.Output as string);
         outputs.push(cp.Output as string);
       }
+
       break;
     }
   }
 
+  core.setOutput('status', status);
+  core.setOutput('output', outputs.join('\n'));
+
   if (status != 'Success') {
     throw new Error(`Failed to send command: ${status}`);
   }
-
-  core.setOutput('status', status);
-
-  core.setOutput('output', outputs.join('\n'));
 }
 
 main().catch((e) => core.setFailed(e.message));
