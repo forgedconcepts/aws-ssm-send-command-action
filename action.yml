@@ -1,5 +1,5 @@
-name: AWS SSM Send-Command Action
-description: Run command on the EC2 instance through SSM
+name: AWS Systems Manager Run Command
+description: Run commands on EC2 instances through SSM
 
 inputs:
   aws-region:
