@@ -25,39 +25,47 @@ async function main() {
 
   const result = await client.send(command);
   const CommandId = result.Command?.CommandId;
-  core.info('command-id: ${CommandId}');
+  core.info(`command-id: ${CommandId}`);
 
   const int32 = new Int32Array(new SharedArrayBuffer(4));
   const outputs = [];
   let status = 'Pending';
-  let finalOutput = '';
 
-  for (let i = 0; i < TimeoutSeconds; i++) {
-    Atomics.wait(int32, 0, 0, 1000);
+  // loop until the command is finished
+  while (true) {
+    Atomics.wait(int32, 0, 0, 5000);
+
     const result = await client.send(
       new ListCommandInvocationsCommand({CommandId, Details: true}),
     );
+
     const invocation = result.CommandInvocations?.[0] || {};
     status = invocation.Status as string;
 
-    core.info(`status: ${status}`);
-
-    if (['Success', 'Failure'].includes(status)) {
+    // check if the command is finished
+    if (['Cancelled', 'Failed', 'Success', 'TimedOut'].includes(status)) {
+      // check the plugins processed by the command
       for (const cp of invocation.CommandPlugins || []) {
+        // output the command plugin output
+        core.info(cp.Output as string);
+
+        // add to the outputs to use in setOutput later
         outputs.push(cp.Output as string);
       }
+
+      // break the while loop since the command is finished
       break;
     }
   }
 
-  if (status != 'Success') {
-    throw new Error(`Failed to send command: ${status}`);
-  }
-
+  // output the status and the outputs
   core.setOutput('status', status);
+  core.setOutput('output', outputs.join('\n'));
 
-  core.info(`output: ${outputs.join('\n')}`);
-  core.info(`results: ${finalOutput}`);
+  // if the status is not Success, throw an error
+  if (status != 'Success') {
+    throw new Error(`Command failed with status ${status}`);
+  }
 }
 
 main().catch((e) => core.setFailed(e.message));

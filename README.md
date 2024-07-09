@@ -1,10 +1,14 @@
 # AWS SSM Send-Command Action
 
+This was originally developed here from https://github.com/nohmad/aws-ssm-send-command-action
+
+Has been updated to manage AWS credentials outside the action and has some fixes for outputs
+
 Run AWS's SSM Send-Command API using this action. Refer to [AWS SDK for JavaScript v3](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-ssm/interfaces/sendcommandcommandinput.html).
 
 ```yml
 - name: Run aws ssm send-command
-  uses: nohmad/aws-ssm-send-command-action@master
+  uses: forgedconcepts/aws-ssm-send-command-action@master
   with:
     targets: |
       [{"Key":"InstanceIds","Values":["i-1234567890"]}]
@@ -68,7 +72,7 @@ Command output
 
 ## Author
 
-GY Noh <nohmad@gmail.com>
+Forged Concepts
 
 # LICENSE
 
