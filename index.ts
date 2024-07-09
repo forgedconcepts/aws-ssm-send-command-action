@@ -25,12 +25,11 @@ async function main() {
 
   const result = await client.send(command);
   const CommandId = result.Command?.CommandId;
-  core.info('command-id: ${CommandId}');
+  core.info(`command-id: ${CommandId}`);
 
   const int32 = new Int32Array(new SharedArrayBuffer(4));
   const outputs = [];
   let status = 'Pending';
-  let finalOutput = '';
 
   for (let i = 0; i < TimeoutSeconds; i++) {
     Atomics.wait(int32, 0, 0, 1000);
@@ -40,10 +39,9 @@ async function main() {
     const invocation = result.CommandInvocations?.[0] || {};
     status = invocation.Status as string;
 
-    core.info(`status: ${status}`);
-
     if (['Success', 'Failure'].includes(status)) {
       for (const cp of invocation.CommandPlugins || []) {
+        core.info(cp.Output as string);
         outputs.push(cp.Output as string);
       }
       break;
@@ -56,8 +54,7 @@ async function main() {
 
   core.setOutput('status', status);
 
-  core.info(`output: ${outputs.join('\n')}`);
-  core.info(`results: ${finalOutput}`);
+  core.setOutput('output', outputs.join('\n'));
 }
 
 main().catch((e) => core.setFailed(e.message));
