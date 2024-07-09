@@ -30,8 +30,8 @@ async function main() {
   const int32 = new Int32Array(new SharedArrayBuffer(4));
   const outputs = [];
   let status = 'Pending';
-  let standardUrl = '';
 
+  // loop until the command is finished
   while (true) {
     Atomics.wait(int32, 0, 0, 5000);
 
@@ -42,27 +42,29 @@ async function main() {
     const invocation = result.CommandInvocations?.[0] || {};
     status = invocation.Status as string;
 
+    // check if the command is finished
     if (['Cancelled', 'Failed', 'Success', 'TimedOut'].includes(status)) {
+      // check the plugins processed by the command
       for (const cp of invocation.CommandPlugins || []) {
-        outputs.push(cp.Output as string);
-
+        // output the command plugin output
         core.info(cp.Output as string);
+
+        // add to the outputs to use in setOutput later
+        outputs.push(cp.Output as string);
       }
 
-      break;
-    }
-
-    if (status === 'Failed') {
-      core.setFailed(`failed_url: ${invocation.StandardErrorUrl}`);
+      // break the while loop since the command is finished
       break;
     }
   }
 
+  // output the status and the outputs
   core.setOutput('status', status);
   core.setOutput('output', outputs.join('\n'));
 
+  // if the status is not Success, throw an error
   if (status != 'Success') {
-    throw new Error(`Command failed: ${status}`);
+    throw new Error(`Command failed with status ${status}`);
   }
 }
 
