@@ -2,19 +2,19 @@ import {
   SSMClient,
   SendCommandCommand,
   ListCommandInvocationsCommand,
-} from '@aws-sdk/client-ssm';
-import * as core from '@actions/core';
+} from "@aws-sdk/client-ssm";
+import * as core from "@actions/core";
 
 async function main() {
-  const region = core.getInput('aws-region');
-  const client = new SSMClient({region});
-  const TimeoutSeconds = parseInt(core.getInput('timeout'));
-  const parameters = core.getInput('parameters', {required: true});
+  const region = core.getInput("aws-region");
+  const client = new SSMClient({ region });
+  const TimeoutSeconds = parseInt(core.getInput("timeout"));
+  const parameters = core.getInput("parameters", { required: true });
 
   const command = new SendCommandCommand({
     TimeoutSeconds,
-    Targets: JSON.parse(core.getInput('targets', {required: true})),
-    DocumentName: core.getInput('document-name'),
+    Targets: JSON.parse(core.getInput("targets", { required: true })),
+    DocumentName: core.getInput("document-name"),
     Parameters: JSON.parse(parameters),
   });
 
@@ -29,28 +29,34 @@ async function main() {
 
   const int32 = new Int32Array(new SharedArrayBuffer(4));
   const outputs = [];
-  let status = 'Pending';
+  let status = "Pending";
+  let errorMessage = "";
 
   // loop until the command is finished
   while (true) {
     Atomics.wait(int32, 0, 0, 5000);
 
     const result = await client.send(
-      new ListCommandInvocationsCommand({CommandId, Details: true}),
+      new ListCommandInvocationsCommand({ CommandId, Details: true })
     );
 
     const invocation = result.CommandInvocations?.[0] || {};
     status = invocation.Status as string;
 
     // check if the command is finished
-    if (['Cancelled', 'Failed', 'Success', 'TimedOut'].includes(status)) {
+    if (["Cancelled", "Failed", "Success", "TimedOut"].includes(status)) {
       // check the plugins processed by the command
       for (const cp of invocation.CommandPlugins || []) {
-        // output the command plugin output
-        core.info(cp.Output as string);
+        // Store error message if present
+        if (cp.ResponseCode !== 0) {
+          errorMessage = cp.Output || "Unknown error occurred";
+        }
 
-        // add to the outputs to use in setOutput later
-        outputs.push(cp.Output as string);
+        // output the command plugin output
+        if (cp.Output) {
+          core.info(cp.Output);
+          outputs.push(cp.Output);
+        }
       }
 
       // break the while loop since the command is finished
@@ -59,15 +65,23 @@ async function main() {
   }
 
   // output the status and the outputs
-  core.setOutput('status', status);
-  core.setOutput('output', outputs.join('\n'));
+  core.setOutput("status", status);
+  core.setOutput("output", outputs.join("\n"));
+  core.setOutput("command-id", CommandId);
 
-  // if the status is not Success, throw an error
-  if (status != 'Success') {
-    throw new Error(`Command failed with status ${status}`);
+  // if the status is not Success, throw an error with detailed message
+  if (status !== "Success") {
+    const errorDetail = errorMessage
+      ? `Command failed with status ${status}: ${errorMessage}`
+      : `Command failed with status ${status}`;
+    core.setFailed(errorDetail);
+    throw new Error(errorDetail);
   }
 }
 
-main().catch((e) => core.setFailed(e.message));
+main().catch((e) => {
+  core.setFailed(e.message);
+  process.exit(1);
+});
 
 export default main;
